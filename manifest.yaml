@@ -1,0 +1,107 @@
+schema_version: "1"
+
+# ===========================================================================
+# Confluence Playbook Agent — extracted from middleware kernel in Phase 5B
+# M3+M4 catch-up. Consumes the toolkit array published by the integration.
+# ===========================================================================
+
+identity:
+  id: "@omadia/agent-confluence"
+  kind: "agent"
+  domain: "confluence"
+  name: "Confluence Playbook Assistant"
+  version: "0.3.1"
+  description: "Confluence-Playbook-Agent für interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks (CQL-Search + Page-Read). Read-only per Default; bei aktiviertem confluence_write_enabled kann er zusätzlich Seiten anlegen/aktualisieren und Kommentare schreiben — immer erst nach expliziter Nutzer-Bestätigung der Vorschau."
+  authors:
+    - name: "byte5 GmbH"
+      email: "dev@byte5.de"
+  license: "MIT"
+  categories:
+    - "knowledge"
+    - "productivity"
+
+compat:
+  core: ">=1.0 <2.0"
+  node: ">=20"
+
+# Consumes 'confluence.toolkit' published by @omadia/integration-confluence —
+# a LocalSubAgentTool[] containing confluence_search/get_page/get_children/etc.
+depends_on:
+  - "@omadia/integration-confluence"
+
+lifecycle:
+  entry: "dist/plugin.js"
+  hooks:
+    onInstall: false
+    onConfigure: true
+    onActivate: true
+    onDeactivate: true
+    onUninstall: true
+  uninstall_policy:
+    entities: "quarantine"
+    memory: "delete"
+    secrets: "delete"
+
+setup:
+  fields: []
+  self_test: true
+
+llm:
+  prefers:
+    - capabilities: ["tool_use", "long_context"]
+      min_context: 200000
+      class: "frontier"
+      temperature_hint: 0.2
+  fallback_allowed: true
+
+playbook:
+  when_to_use: |
+    Confluence-Playbook-Agent für den konfigurierten Space:
+    interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks,
+    Meeting-Notizen, Handbuch-Inhalte, "wie machen wir X". Volltextsuche
+    via CQL, liefert Seitentitel + Link + Stand-Datum zurück. Scope ist
+    hart auf den im integration-confluence konfigurierten Space begrenzt.
+    Bei aktiviertem confluence_write_enabled zusätzlich: Seite anlegen,
+    Seite aktualisieren, Kommentar hinzufügen — jeweils erst nach
+    ausdrücklicher Nutzer-Bestätigung einer Vorschau.
+  not_for:
+    - "Externe Quellen (Web, Drittanbieter-Wikis)"
+    - "Confluence-Spaces außerhalb des konfigurierten Scopes"
+    - "Löschen, Verschieben oder Labeln von Seiten (nicht im Toolkit)"
+    - "Schreiben ohne aktiviertes confluence_write_enabled oder ohne Nutzer-Bestätigung"
+  example_prompts:
+    - "Wie ist der Onboarding-Prozess für neue Mitarbeiter?"
+    - "Such mir alle OKR-Seiten für Q2."
+    - "Was steht im Runbook für Incident-Response?"
+    - "Leg eine neue Seite 'Q3 OKRs' unter der OKR-Übersicht an."
+
+permissions:
+  memory:
+    reads: ["session:*", "agent:@omadia/agent-confluence:*"]
+    writes: ["agent:@omadia/agent-confluence:*"]
+  graph:
+    reads: []
+    writes: []
+  network:
+    outbound: []
+  filesystem:
+    scratch: false
+
+integrations: []
+
+skills:
+  - id: "runtime-note"
+    kind: "prompt_partial"
+    path: "skills/runtime-note.md"
+    description: "Beschreibt die in-process Laufzeit (5 confluence_*-Tools) — überschreibt die HTTP/curl-Anweisungen im playbook."
+    shareable: false
+  - id: "playbook"
+    kind: "prompt_partial"
+    path: "skills/playbook.md"
+    description: "Vollständiges Confluence-Playbook (CQL-Patterns, Scope-Regeln, Beispiel-Queries)."
+    shareable: false
+
+ui:
+  settings_schema: null
+  commands: []
+  dashboard_cards: []

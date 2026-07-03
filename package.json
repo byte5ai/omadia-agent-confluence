@@ -1,0 +1,46 @@
+{
+  "name": "@omadia/agent-confluence",
+  "version": "0.3.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/plugin.js",
+  "types": "dist/plugin.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/plugin.d.ts",
+      "default": "./dist/plugin.js"
+    }
+  },
+  "files": [
+    "dist",
+    "skills",
+    "manifest.yaml"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@omadia/plugin-api": "*",
+    "@omadia/plugin-ui-helpers": "*",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "@types/node": "^25.6.0",
+    "@types/express": "^5.0.6",
+    "express": "^5.1.0",
+    "@omadia/plugin-ui-helpers": "file:../odoo-bot/middleware/packages/harness-ui-helpers"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "description": "Confluence sub-agent for omadia — page search/read/write via the shared Confluence integration, writes always save as draft.",
+  "homepage": "https://github.com/byte5ai/omadia-agent-confluence",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/byte5ai/omadia-agent-confluence.git"
+  }
+}
