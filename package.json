@@ -1,6 +1,6 @@
 {
   "name": "@omadia/agent-confluence",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "type": "module",
   "main": "dist/plugin.js",
@@ -38,7 +38,7 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Confluence sub-agent for omadia — page search/read/write via the shared Confluence integration, writes always save as draft.",
+  "description": "Confluence sub-agent for omadia \u2014 page search/read/write via the shared Confluence integration, writes always save as draft.",
   "homepage": "https://github.com/byte5ai/omadia-agent-confluence",
   "repository": {
     "type": "git",
