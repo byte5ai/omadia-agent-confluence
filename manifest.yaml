@@ -10,7 +10,7 @@ identity:
   kind: "agent"
   domain: "confluence"
   name: "Confluence Playbook Assistant"
-  version: "0.3.2"
+  version: "0.3.3"
   description: "Confluence-Playbook-Agent für interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks (CQL-Search + Page-Read). Read-only per Default; bei aktiviertem confluence_write_enabled kann er zusätzlich Seiten anlegen/aktualisieren und Kommentare schreiben — immer erst nach expliziter Nutzer-Bestätigung der Vorschau."
   authors:
     - name: "byte5 GmbH"
@@ -28,6 +28,24 @@ compat:
 # a LocalSubAgentTool[] containing confluence_search/get_page/get_children/etc.
 depends_on:
   - "@omadia/integration-confluence"
+
+# omadia#839 — both services are resolved via `ctx.services.get` in activate()
+# with an unconditional throw when absent. They are declared under
+# `optional_requires:` rather than `requires:` for one concrete reason: their
+# provider, `@omadia/integration-confluence`, publishes them at runtime via
+# `ctx.services.provide` but its manifest still carries `provides: []` (it is
+# outside the scope of this change and ships from its own repo). A `requires:`
+# entry naming an undeclared capability is permanently unresolved, and an
+# unresolved `requires:` drops this agent from the eligible set — it would
+# never activate. `optional_requires:` grants exactly the declaration the
+# service gate asks for without a resolver edge; `depends_on` above still
+# guarantees the integration activates first, and this agent's own
+# `services.get` null-check stays the failure mode if the toolkit is genuinely
+# absent. Retires the `@omadia/agent-confluence` row in
+# `STANDALONE_LEGACY_SERVICE_GRANTS_2026_08_20`.
+optional_requires:
+  - "confluence.client@1"
+  - "confluence.toolkit@1"
 
 lifecycle:
   entry: "dist/plugin.js"
