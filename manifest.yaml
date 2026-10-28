@@ -10,7 +10,7 @@ identity:
   kind: "agent"
   domain: "confluence"
   name: "Confluence Playbook Assistant"
-  version: "0.3.3"
+  version: "0.3.4"
   description: "Confluence-Playbook-Agent für interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks (CQL-Search + Page-Read). Read-only per Default; bei aktiviertem confluence_write_enabled kann er zusätzlich Seiten anlegen/aktualisieren und Kommentare schreiben — immer erst nach expliziter Nutzer-Bestätigung der Vorschau."
   authors:
     - name: "byte5 GmbH"
@@ -111,7 +111,7 @@ skills:
   - id: "runtime-note"
     kind: "prompt_partial"
     path: "skills/runtime-note.md"
-    description: "Beschreibt die in-process Laufzeit (5 confluence_*-Tools) — überschreibt die HTTP/curl-Anweisungen im playbook."
+    description: "Beschreibt die in-process Laufzeit (confluence_*-Tools, Schreib-Flow)."
     shareable: false
   - id: "playbook"
     kind: "prompt_partial"
