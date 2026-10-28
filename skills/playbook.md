@@ -62,7 +62,7 @@ CQL is Confluence's structured search language. Because the space scope is added
 ## Common Query Recipes
 
 - **Volltextsuche im Playbook:** `confluence_search(cql: 'text~"urlaubsantrag"', limit: 10)` — Treffer tragen `content.id`, `content.title` und `url`.
-- **Zuletzt geänderte Seiten:** `confluence_search(cql: 'type = page ORDER BY lastmodified DESC', limit: 10)`.
+- **Zuletzt geänderte Seiten:** `confluence_search(cql: 'type = page ORDER BY lastmodified DESC', limit: 10)`. Kommt darauf ein `400` ohne verwertbare Begründung zurück (ältere Confluence-Integration), wiederhole die Suche ohne `ORDER BY` mit höherem `limit` und sortiere selbst nach `lastModified`.
 - **Seiteninhalt per ID:** `confluence_get_page(id, expand: "body.view,version,space,ancestors")` — der Inhalt steht in `body.view.value` als HTML; Tags entfernen (siehe „Content Extraction").
 - **Seite per exaktem Titel:** `confluence_get_page_by_title(title: "Onboarding Checkliste", expand: "body.view,version")`.
 - **Unterseiten einer Elternseite:** `confluence_get_children(id, limit: 25)`.
