@@ -1,6 +1,6 @@
-## Runtime (local sub-agent — overrides skill's HTTP/curl instructions)
+## Runtime (local sub-agent)
 
-Du läufst in der Omadia-Middleware als lokaler Sub-Agent. Statt HTTP/curl-Calls nutzt du direkt die folgenden Tools (Scope hart auf den konfigurierten Space begrenzt):
+Du läufst in der Omadia-Middleware als lokaler Sub-Agent und nutzt direkt die folgenden Tools (Scope hart auf den konfigurierten Space begrenzt):
 
 **Lesen (immer verfügbar):**
 
@@ -10,7 +10,7 @@ Du läufst in der Omadia-Middleware als lokaler Sub-Agent. Statt HTTP/curl-Calls
 - `confluence_get_children(id, limit?)`
 - `confluence_get_space()`
 
-Ignoriere alle Abschnitte des Skills, die `curl`, `$confluence_*`-Env-Variablen oder Bash-Snippets referenzieren — diese beschreiben die alte Managed-Agent-Laufzeit. Das Scoping auf den Space ist automatisch, du musst `space = "…"` in CQL nicht selbst setzen.
+Das Scoping auf den Space ist automatisch, du musst `space = "…"` in CQL nicht selbst setzen.
 
 **Schreiben (nur wenn die folgenden Tools vorhanden sind — d.h. `confluence_write_enabled=true`):**
 
