@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.0
+
+- Teams tabs work again after omadia core #1596 (byte5ai/omadia#1620). The
+  dashboards are now mounted three times:
+
+  | Path | Auth | Content |
+  |---|---|---|
+  | `/p/agent-confluence/<page>` | `'session'` | the page for operators in a browser (unchanged) |
+  | `/p/agent-confluence/teams/<page>` | `'public'` | data-free shell: gets a Teams SSO token via `getAuthToken()` and loads the page with it |
+  | `/p/agent-confluence/teams/_data/<page>` | `'teams-sso'` | the same page, only for a kernel-verified Teams SSO token |
+
+  `<page>` is `most-read` or `oldest`. The data router starts with a
+  fail-closed guard (401 `auth.teams_sso_required` without
+  `req.teamsSsoUser`) for cores that predate `'teams-sso'`.
+- `ctx.uiRoutes` descriptors point at the shell (`/teams/most-read`,
+  `/teams/oldest`), so channel-teams pins the shell as the tab URL. Tabs
+  pinned before 0.4.0 still point at the session page and must be re-pinned.
+- Manifest: `permissions.public_paths: ["/p/agent-confluence/teams"]` — the
+  operator must grant it after the update, until then the Teams tabs answer
+  401. `compat.core` is now `>=1.51.0 <2.0` (plugin-api with `'teams-sso'`).
+- Every member of the Teams tenant who can open the tab sees the page titles,
+  authors and links of the configured space, as read by the integration's
+  service account.
+- `npm test` also builds and runs `test/teamsTab.test.mjs` (data-free shell,
+  401 without a Teams user, manifest declaration, route registration).
+
 ## 0.3.4
 
 - The playbook no longer hard-codes the space key `HOME` (byte5ai/omadia#1493).

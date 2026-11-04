@@ -10,7 +10,7 @@ identity:
   kind: "agent"
   domain: "confluence"
   name: "Confluence Playbook Assistant"
-  version: "0.3.4"
+  version: "0.4.0"
   description: "Confluence-Playbook-Agent für interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks (CQL-Search + Page-Read). Read-only per Default; bei aktiviertem confluence_write_enabled kann er zusätzlich Seiten anlegen/aktualisieren und Kommentare schreiben — immer erst nach expliziter Nutzer-Bestätigung der Vorschau."
   authors:
     - name: "byte5 GmbH"
@@ -21,7 +21,7 @@ identity:
     - "productivity"
 
 compat:
-  core: ">=1.0 <2.0"
+  core: ">=1.51.0 <2.0"
   node: ">=20"
 
 # Consumes 'confluence.toolkit' published by @omadia/integration-confluence —
@@ -104,6 +104,12 @@ permissions:
     outbound: []
   filesystem:
     scratch: false
+  # byte5ai/omadia#1620 — Teams-tab surface: a data-free shell ('public') and
+  # the dashboards behind the kernel's 'teams-sso' mode, both under this one
+  # entry. Served only after the operator grants it. The browser pages at
+  # /p/agent-confluence/<page> stay behind the omadia session.
+  public_paths:
+    - "/p/agent-confluence/teams"
 
 integrations: []
 

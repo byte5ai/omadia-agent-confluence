@@ -23,6 +23,19 @@ integration's read/write surface, a data-source route
 (`src/routes/confluenceUiRouter.ts`, built with `@omadia/plugin-ui-helpers`).
 Write operations always save as draft, never publish live.
 
+## Dashboards and Teams tabs
+
+Two dashboards (`most-read`, `oldest`) of the configured space:
+
+- Browser: `/p/agent-confluence/<page>`, behind the omadia session.
+- Teams tab: `/p/agent-confluence/teams/<page>`, a data-free shell that loads
+  the page from `/p/agent-confluence/teams/_data/<page>` with the tab's Teams
+  SSO token (kernel `auth: 'teams-sso'`, byte5ai/omadia#1620). Needs omadia
+  core with `@omadia/plugin-api` >= 1.51.0 and the operator's grant of the
+  `permissions.public_paths` entry `/p/agent-confluence/teams`. Every tenant
+  member can open it, so it shows only what the configured space may show to
+  the whole tenant.
+
 ## Build, typecheck
 
 ```bash

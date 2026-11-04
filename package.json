@@ -1,6 +1,6 @@
 {
   "name": "@omadia/agent-confluence",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "main": "dist/plugin.js",
@@ -21,7 +21,7 @@
     "package": "node scripts/build-zip.mjs",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist out",
-    "test": "node scripts/check-skills.mjs"
+    "test": "node scripts/check-skills.mjs && tsc && node --test test/*.test.mjs"
   },
   "license": "MIT",
   "peerDependencies": {
