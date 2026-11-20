@@ -36,7 +36,7 @@ Tools: `confluence_search`, `confluence_get_page`,
 `side_effects` entry in the manifest. The dashboards below stay part of the
 plugin.
 
-Needs omadia core >= 1.77.0 (kind `tool`, `agent_templates`).
+Needs omadia core >= 1.78.0 (kind `tool`, `agent_templates`).
 
 ## Dashboards and Teams tabs
 
