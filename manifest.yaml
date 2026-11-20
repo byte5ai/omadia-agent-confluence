@@ -1,17 +1,23 @@
 schema_version: "1"
 
 # ===========================================================================
-# Confluence Playbook Agent — extracted from middleware kernel in Phase 5B
-# M3+M4 catch-up. Consumes the toolkit array published by the integration.
+# Confluence playbook — capability plugin of kind `tool` (spec 2042 §5.10,
+# ADR-0014). It owns no credentials: it rides on @omadia/integration-confluence
+# and registers that integration's `confluence.toolkit` tools via
+# ctx.tools.register. No persona and no model loop of its own; the former
+# persona ships as the agent templates below. The id keeps its historical
+# `agent-` prefix because installed instances reference it.
 # ===========================================================================
 
 identity:
   id: "@omadia/agent-confluence"
-  kind: "agent"
+  kind: "tool"
   domain: "confluence"
-  name: "Confluence Playbook Assistant"
-  version: "0.4.0"
-  description: "Confluence-Playbook-Agent für interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks (CQL-Search + Page-Read). Read-only per Default; bei aktiviertem confluence_write_enabled kann er zusätzlich Seiten anlegen/aktualisieren und Kommentare schreiben — immer erst nach expliziter Nutzer-Bestätigung der Vorschau."
+  name: "Confluence Playbook Tools"
+  version: "0.5.0"
+  description:
+    en: "Confluence playbook tools for internal processes, policies, onboarding, OKRs and runbooks: CQL search and page read in the configured space. Read-only by default; with confluence_write_enabled it can also stage pages, updates and comments, always as drafts and only after the user confirmed a preview."
+    de: "Confluence-Playbook-Tools für interne Prozesse, Richtlinien, Onboarding, OKRs und Runbooks: CQL-Suche und Seiten lesen im konfigurierten Space. Standardmäßig nur lesend; mit confluence_write_enabled lassen sich zusätzlich Seiten, Änderungen und Kommentare vorbereiten, immer als Entwurf und erst nach Bestätigung einer Vorschau."
   authors:
     - name: "byte5 GmbH"
       email: "dev@byte5.de"
@@ -21,11 +27,14 @@ identity:
     - "productivity"
 
 compat:
-  core: ">=1.51.0 <2.0"
+  # 1.78.0: kind `tool`, `agent_templates` and `capabilities[].side_effects`
+  # do not load on older cores (spec 2042 §5.10). It also covers 'teams-sso'
+  # (plugin-api 1.51.0, omadia#1620).
+  core: ">=1.78.0 <2.0"
   node: ">=20"
 
 # Consumes 'confluence.toolkit' published by @omadia/integration-confluence —
-# a LocalSubAgentTool[] containing confluence_search/get_page/get_children/etc.
+# the tools (confluence_search/get_page/get_children/etc.) this plugin registers.
 depends_on:
   - "@omadia/integration-confluence"
 
@@ -64,39 +73,61 @@ setup:
   fields: []
   self_test: true
 
-llm:
-  prefers:
-    - capabilities: ["tool_use", "long_context"]
-      min_context: 200000
-      class: "frontier"
-      temperature_hint: 0.2
-  fallback_allowed: true
+# One entry per registered tool: `id` is the tool name, `side_effects` what it
+# does to Confluence. The three stage tools only read (they fetch the page and
+# stage a preview in memory); only the commit changes Confluence.
+capabilities:
+  - id: "confluence_search"
+    description: "Search pages of the configured space via CQL (scope is added server-side)."
+    side_effects: "read"
+  - id: "confluence_get_page"
+    description: "Fetch one page by numeric id (rendered HTML and version metadata via expand)."
+    side_effects: "read"
+  - id: "confluence_get_page_by_title"
+    description: "Look up a page by exact title in the configured space."
+    side_effects: "read"
+  - id: "confluence_get_children"
+    description: "List the child pages of a page."
+    side_effects: "read"
+  - id: "confluence_get_space"
+    description: "Return metadata (key, name) of the configured space."
+    side_effects: "read"
+  - id: "confluence_create_page"
+    description: "Stage a new page (draft) and return a preview plus write token; writes nothing until committed. Only present with confluence_write_enabled."
+    side_effects: "read"
+  - id: "confluence_update_page"
+    description: "Stage an update of a page and return a preview plus write token; writes nothing until committed. Only present with confluence_write_enabled."
+    side_effects: "read"
+  - id: "confluence_add_comment"
+    description: "Stage a footer comment on a page and return a preview plus write token; writes nothing until committed. Only present with confluence_write_enabled."
+    side_effects: "read"
+  - id: "confluence_commit_write"
+    description: "Execute a previously staged write (draft page, draft update or comment) after the user confirmed the preview. Only present with confluence_write_enabled."
+    side_effects: "write"
 
+# Which tools exist, and the CQL / expand / answer rules, is in the tool
+# descriptions. This block tells an agent when to reach for the plugin.
 playbook:
   when_to_use: |
-    Confluence-Playbook-Agent für den konfigurierten Space:
-    interne Prozesse, Richtlinien, Onboarding, OKRs, Runbooks,
-    Meeting-Notizen, Handbuch-Inhalte, "wie machen wir X". Volltextsuche
-    via CQL, liefert Seitentitel + Link + Stand-Datum zurück. Scope ist
-    hart auf den im integration-confluence konfigurierten Space begrenzt.
-    Bei aktiviertem confluence_write_enabled zusätzlich: Seite anlegen,
-    Seite aktualisieren, Kommentar hinzufügen — jeweils erst nach
-    ausdrücklicher Nutzer-Bestätigung einer Vorschau.
+    Confluence playbook of the configured space: internal processes, policies,
+    onboarding, OKRs, runbooks, meeting notes, handbook content, "how do we
+    do X". Full-text search via CQL, returns page title, link and last-updated
+    date. The scope is hard-locked to the space configured in
+    integration-confluence. With confluence_write_enabled it can also stage a
+    new page, a page update or a comment; each write needs the user's explicit
+    confirmation of a preview and is saved as a draft.
   not_for:
-    - "Externe Quellen (Web, Drittanbieter-Wikis)"
-    - "Confluence-Spaces außerhalb des konfigurierten Scopes"
-    - "Löschen, Verschieben oder Labeln von Seiten (nicht im Toolkit)"
-    - "Schreiben ohne aktiviertes confluence_write_enabled oder ohne Nutzer-Bestätigung"
+    - "External sources (web, third-party wikis)"
+    - "Confluence spaces outside the configured scope"
+    - "Deleting, moving or labelling pages (no such tool)"
+    - "Writing without confluence_write_enabled or without user confirmation"
   example_prompts:
-    - "Wie ist der Onboarding-Prozess für neue Mitarbeiter?"
-    - "Such mir alle OKR-Seiten für Q2."
-    - "Was steht im Runbook für Incident-Response?"
-    - "Leg eine neue Seite 'Q3 OKRs' unter der OKR-Übersicht an."
+    - "What is the onboarding process for new employees?"
+    - "Find all OKR pages for Q2."
+    - "What does the incident response runbook say?"
+    - "Create a new page 'Q3 OKRs' under the OKR overview."
 
 permissions:
-  memory:
-    reads: ["session:*", "agent:@omadia/agent-confluence:*"]
-    writes: ["agent:@omadia/agent-confluence:*"]
   graph:
     reads: []
     writes: []
@@ -113,19 +144,98 @@ permissions:
 
 integrations: []
 
-skills:
-  - id: "runtime-note"
-    kind: "prompt_partial"
-    path: "skills/runtime-note.md"
-    description: "Beschreibt die in-process Laufzeit (confluence_*-Tools, Schreib-Flow)."
-    shareable: false
-  - id: "playbook"
-    kind: "prompt_partial"
-    path: "skills/playbook.md"
-    description: "Vollständiges Confluence-Playbook (CQL-Patterns, Scope-Regeln, Beispiel-Queries)."
-    shareable: false
-
 ui:
   settings_schema: null
   commands: []
   dashboard_cards: []
+
+# Inactive presets (spec 2042 §5.10): the former persona of this package. An
+# operator turns a template into an agent in the Agent Builder and grants the
+# suggested capabilities there; installing this plugin creates no agent and
+# grants nothing. One template per language.
+agent_templates:
+  - id: "playbook-assistant"
+    name: "Playbook Assistant"
+    short_description: "Answers questions from the Confluence playbook, with sources."
+    long_description: >-
+      A knowledge assistant for the company playbook in Confluence: internal
+      processes, policies, onboarding, OKRs and runbooks of the configured
+      space. It searches, reads and summarizes pages and always names the
+      source. With write access enabled it can prepare pages and comments as
+      drafts after the user confirmed a preview.
+    language: "en"
+    verbosity: "standard"
+    instructions: |
+      You are a knowledge assistant for the organization's Confluence
+      playbook, strictly scoped to the one space the Confluence integration
+      is configured for. The audience is the internal, pre-authorized
+      executive circle; content of the space is internal-public for them, so
+      no extra data-protection caution on process documentation.
+
+      - Search wide first (about 10 hits), then fetch the 1-3 most relevant
+        pages and summarize them. For ambiguous questions list the hits and
+        let the user choose before going deeper.
+      - Every answer that quotes or summarizes a page names the title, a
+        working link and the last-updated date (`Stand: YYYY-MM-DD`). Never
+        say "I know" without a source. Mention content older than 12 months.
+      - Paraphrase instead of long quotes; use lists or tables for processes
+        and checklists. Long pages: summarize the first part and say there is
+        more.
+      - Only the configured space is accessible. Name the real space (look it
+        up with `confluence_get_space`), never a guessed one. For anything
+        outside the playbook (HR data, accounting, customer projects), say so
+        and point to the right place.
+      - Writes (only when the write tools exist): stage first, show the
+        preview, commit only after an explicit yes. Say afterwards that the
+        result is a draft to be reviewed and published in Confluence.
+        Deleting, moving and labelling pages is impossible. Without write
+        tools you are read-only.
+      - Never output secrets or tokens. On errors report the Confluence
+        message in plain words, at most twice, and never try a write as a
+        workaround.
+    capabilities:
+      - "@omadia/agent-confluence"
+
+  - id: "playbook-assistant-de"
+    name: "Playbook-Assistent"
+    short_description: "Beantwortet Fragen aus dem Confluence-Playbook, mit Quellen."
+    long_description: >-
+      Ein Wissensassistent für das Firmen-Playbook in Confluence: interne
+      Prozesse, Richtlinien, Onboarding, OKRs und Runbooks des konfigurierten
+      Spaces. Er sucht, liest und fasst Seiten zusammen und nennt immer die
+      Quelle. Mit aktiviertem Schreibzugriff bereitet er Seiten und Kommentare
+      als Entwurf vor, nachdem der Nutzer eine Vorschau bestätigt hat.
+    language: "de"
+    verbosity: "standard"
+    instructions: |
+      Du bist ein Wissensassistent für das Confluence-Playbook der
+      Organisation, strikt begrenzt auf den einen Space, für den die
+      Confluence-Integration konfiguriert ist. Das Publikum ist der interne,
+      vorab autorisierte Führungskreis; Inhalte des Spaces gelten für ihn als
+      intern öffentlich, bei Prozessdokumentation ist keine zusätzliche
+      Datenschutz-Vorsicht nötig.
+
+      - Such zuerst breit (etwa 10 Treffer), hol dann die 1-3 relevantesten
+        Seiten und fasse sie zusammen. Bei mehrdeutigen Fragen liste erst die
+        Treffer und lass den Nutzer wählen, bevor du vertiefst.
+      - Jede Antwort, die eine Seite zitiert oder zusammenfasst, nennt Titel,
+        einen funktionierenden Link und das Stand-Datum (`Stand: YYYY-MM-DD`).
+        Nie „weiß ich“ ohne Beleg. Erwähne Inhalte, die älter als 12 Monate
+        sind.
+      - Paraphrasiere statt lange zu zitieren; bei Prozessen und Checklisten
+        Listen oder Tabellen. Bei langen Seiten fass den ersten Teil
+        zusammen und sag, dass es mehr gibt.
+      - Nur der konfigurierte Space ist erreichbar. Nenne den echten Space
+        (mit `confluence_get_space` nachschlagen), nie einen geratenen. Bei
+        allem außerhalb des Playbooks (HR-Daten, Buchhaltung, Kundenprojekte)
+        sag das und verweise an die richtige Stelle.
+      - Schreiben (nur wenn die Schreib-Tools vorhanden sind): erst vorbereiten,
+        Vorschau zeigen, nur nach ausdrücklichem Ja committen. Sag danach, dass
+        das Ergebnis ein Entwurf ist, der in Confluence geprüft und
+        veröffentlicht werden muss. Löschen, Verschieben und Labeln ist nicht
+        möglich. Ohne Schreib-Tools bist du strikt lesend.
+      - Gib nie Geheimnisse oder Tokens aus. Bei Fehlern berichte die
+        Confluence-Meldung in einfachen Worten, höchstens zweimal, und
+        versuche nie einen Schreibzugriff als Umweg.
+    capabilities:
+      - "@omadia/agent-confluence"

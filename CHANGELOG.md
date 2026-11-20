@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.5.0
+
+- Capability plugin instead of a sub-agent (spec 2042 §5.10, ADR-0014,
+  byte5ai/omadia#2053): `identity.kind` is now `tool` (no own credentials; it
+  rides on `@omadia/integration-confluence`). The plugin id is unchanged.
+- `activate` registers every tool of the `confluence.toolkit` service with
+  `ctx.tools.register` and returns `{ close }`; it no longer returns a
+  `toolkit` for a sub-agent. Tool names are unchanged.
+- `AGENT.md`-style persona is gone: the `skills/` prompt partials
+  (`playbook`, `runtime-note`) are removed. CQL patterns, the `expand`
+  whitelist, answer rules and the write flow moved into the tool descriptions
+  and `playbook.when_to_use`; the persona is now two inactive
+  `agent_templates` (`playbook-assistant`, `playbook-assistant-de`).
+- `capabilities[].side_effects` for all nine tools: read for search/get and
+  for the three stage tools, write only for `confluence_commit_write`, which
+  also declares its `writeCapabilities` to the kernel.
+- Removed `llm:` preferences and `permissions.memory`. `description` is
+  `en`/`de`. The ZIP no longer carries `skills/`.
+- `compat.core` is `>=1.78.0 <2.0` (kind `tool`, `agent_templates`).
+- Tests: `test/capabilityPlugin.test.mjs`; `scripts/check-skills.mjs` is gone
+  with the skills.
+- No model access and no network of its own: the plugin makes no `fetch` and
+  uses no SDK; all Confluence traffic runs in the integration.
+- Publish only after the S3a kernel (byte5ai/omadia#2140) runs on Fly.
+
 ## 0.4.0
 
 - Teams tabs work again after omadia core #1596 (byte5ai/omadia#1620). The

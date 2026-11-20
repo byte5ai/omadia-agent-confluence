@@ -1,6 +1,6 @@
 {
   "name": "@omadia/agent-confluence",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "main": "dist/plugin.js",
@@ -13,7 +13,6 @@
   },
   "files": [
     "dist",
-    "skills",
     "manifest.yaml"
   ],
   "scripts": {
@@ -21,7 +20,7 @@
     "package": "node scripts/build-zip.mjs",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist out",
-    "test": "node scripts/check-skills.mjs && tsc && node --test test/*.test.mjs"
+    "test": "tsc && node --test test/*.test.mjs"
   },
   "license": "MIT",
   "peerDependencies": {
@@ -39,7 +38,7 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Confluence sub-agent for omadia \u2014 page search/read/write via the shared Confluence integration, writes always save as draft.",
+  "description": "Confluence playbook tools for omadia \u2014 page search/read/write via the shared Confluence integration, writes always save as draft.",
   "homepage": "https://github.com/byte5ai/omadia-agent-confluence",
   "repository": {
     "type": "git",

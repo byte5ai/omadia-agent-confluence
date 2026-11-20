@@ -1,11 +1,12 @@
 /**
- * Confluence Playbook Sub-Agent — extracted from middleware kernel in
- * Phase 5B M3+M4 catch-up.
+ * Confluence playbook capability plugin (kind `tool`, spec 2042 §5.10,
+ * ADR-0014).
  *
- * Differs from the odoo agents: the integration publishes a complete
- * `confluence.toolkit` (LocalSubAgentTool[]) so this agent doesn't need
- * a graph-lookup helper or @omadia/verifier dependency. We just pass the
- * tools through.
+ * The integration publishes a complete `confluence.toolkit`
+ * (LocalSubAgentTool[]). This plugin registers every tool of it via
+ * `ctx.tools.register` (`registerTools.ts`) and returns `{ close }`. It has no
+ * persona, no system prompt and no sub-agent: the former persona ships as
+ * agent templates in manifest.yaml, the tool knowledge is in the descriptions.
  *
  * v0.2.0 adds two operator-facing dashboards (Hub-/Teams-Tabs) that
  * surface the configured Space's most-favourited and oldest pages — both
@@ -13,9 +14,10 @@
  * kernel's `auth: 'teams-sso'` mode (byte5ai/omadia#1620).
  */
 
-import type { PluginContext } from '@omadia/plugin-api';
-import type { LocalSubAgentTool } from '@omadia/plugin-api';
+import type { LocalSubAgentTool, PluginContext } from '@omadia/plugin-api';
 
+import { CONFLUENCE_TOOL_DOCS, CONFLUENCE_TOOL_OPTIONS } from './toolDocs.js';
+import { registerToolkitTools } from './registerTools.js';
 import { createConfluenceUiRouter } from './routes/confluenceUiRouter.js';
 import {
   createTeamsTabRouters,
@@ -36,12 +38,11 @@ const DASHBOARD_PAGES = [
 ] as const;
 
 export interface ConfluenceHandle {
-  readonly toolkit: { tools: LocalSubAgentTool[] };
   close(): Promise<void>;
 }
 
 export async function activate(ctx: PluginContext): Promise<ConfluenceHandle> {
-  ctx.log('activating confluence-playbook agent');
+  ctx.log('activating confluence playbook tools');
 
   const tools = ctx.services.get<LocalSubAgentTool[]>(TOOLKIT_SERVICE);
   if (!tools || tools.length === 0) {
@@ -121,10 +122,28 @@ export async function activate(ctx: PluginContext): Promise<ConfluenceHandle> {
     `confluence uiRoutes mounted at ${ROUTE_PREFIX}/{most-read,oldest} (session) + ${TEAMS_TAB_PREFIX}/{most-read,oldest} (Teams SSO)`,
   );
 
+  // Every toolkit tool goes to the kernel's tool runtime. The write tools are
+  // only in the toolkit when the integration has confluence_write_enabled.
+  let disposeTools: () => void;
+  try {
+    disposeTools = registerToolkitTools(ctx, tools, {
+      docs: CONFLUENCE_TOOL_DOCS,
+      options: CONFLUENCE_TOOL_OPTIONS,
+    });
+  } catch (err) {
+    // A failed activation gets no close(): take the mounts down here.
+    disposeRoute();
+    disposeTeamsShell();
+    disposeTeamsData();
+    disposeMostReadDescriptor();
+    disposeOldestDescriptor();
+    throw err;
+  }
+
   return {
-    toolkit: { tools },
     async close() {
-      ctx.log('deactivating confluence-playbook agent');
+      ctx.log('deactivating confluence playbook tools');
+      disposeTools();
       disposeRoute();
       disposeTeamsShell();
       disposeTeamsData();
