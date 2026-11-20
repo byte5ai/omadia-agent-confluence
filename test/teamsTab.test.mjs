@@ -100,10 +100,10 @@ test('data router renders the page for a verified Teams user', async () => {
   });
 });
 
-test('manifest declares the Teams public path and the teams-sso core floor', () => {
+test('manifest declares the Teams public path and the core floor that covers teams-sso', () => {
   const manifest = readFileSync(new URL('../manifest.yaml', import.meta.url), 'utf8');
   assert.match(manifest, /public_paths:\s*\n\s*-\s*"\/p\/agent-confluence\/teams"/);
-  assert.match(manifest, /core:\s*">=1\.51\.0 <2\.0"/);
+  assert.match(manifest, /core:\s*">=1\.75\.0 <2\.0"/);
 });
 
 test('activate registers session pages, Teams shell, teams-sso data and shell descriptors', async () => {
@@ -113,13 +113,14 @@ test('activate registers session pages, Teams shell, teams-sso data and shell de
     log() {},
     services: {
       get(name) {
-        if (name === 'confluence.toolkit') return [{ spec: { name: 'confluence_search' } }];
+        if (name === 'confluence.toolkit') return [{ spec: { name: 'confluence_search', description: 'd', input_schema: { type: 'object', properties: {}, required: [] } }, handle: async () => 'ok' }];
         if (name === 'confluence.client') return fakeClient;
         return undefined;
       },
     },
     routes: { register: (prefix, _router, opts) => (routes.push({ prefix, auth: opts?.auth }), () => {}) },
     uiRoutes: { register: (d) => (descriptors.push(d), () => {}) },
+    tools: { register: () => () => {} },
   };
   const handle = await activate(ctx);
   assert.deepEqual(routes, [

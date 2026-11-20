@@ -2,9 +2,9 @@
 
 # @omadia/agent-confluence
 
-### Confluence sub-agent for omadia — page search/read/write via the shared Confluence integration.
+### Confluence playbook tools for omadia — page search/read/write via the shared Confluence integration.
 
-A **Confluence** agent plugin for [omadia](https://github.com/byte5ai/omadia),
+A **Confluence** capability plugin (kind `tool`) for [omadia](https://github.com/byte5ai/omadia),
 built on `@omadia/integration-confluence`.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
@@ -16,12 +16,27 @@ built on `@omadia/integration-confluence`.
 
 ## How it works
 
-A sub-agent playbook (`skills/playbook.md` + `skills/runtime-note.md`) plus a
-plugin entry point (`src/plugin.ts`) wrapping the shared Confluence
-integration's read/write surface, a data-source route
-(`src/routes/confluenceDataSource.ts`) and admin UI route
-(`src/routes/confluenceUiRouter.ts`, built with `@omadia/plugin-ui-helpers`).
-Write operations always save as draft, never publish live.
+A capability plugin of kind `tool` (spec 2042 §5.10): it owns no credentials and
+no persona. `src/plugin.ts` takes the tools the Confluence integration
+publishes as the `confluence.toolkit` service and registers each one with
+`ctx.tools.register` (`src/registerTools.ts`); the kernel offers them to the
+agents the operator granted this plugin to. The knowledge that used to be the
+playbook skill (CQL patterns, `expand` whitelist, answer rules, the two-phase
+write flow) now sits in the tool descriptions (`src/toolDocs.ts`) and in
+`playbook.when_to_use`. The former persona ships as two inactive agent
+templates (English and German) in `manifest.yaml`; an operator turns one into
+an agent in the Agent Builder.
+
+Tools: `confluence_search`, `confluence_get_page`,
+`confluence_get_page_by_title`, `confluence_get_children`,
+`confluence_get_space` (read), and, when the integration has
+`confluence_write_enabled`, `confluence_create_page`, `confluence_update_page`,
+`confluence_add_comment` (stage a preview, read-only) and
+`confluence_commit_write` (the only write; always saved as a draft). Each has a
+`side_effects` entry in the manifest. The dashboards below stay part of the
+plugin.
+
+Needs omadia core >= 1.75.0 (kind `tool`, `agent_templates`).
 
 ## Dashboards and Teams tabs
 
@@ -42,6 +57,8 @@ Two dashboards (`most-read`, `oldest`) of the configured space:
 npm install
 npm run typecheck   # tsc --noEmit
 npm run build        # tsc
+npm test             # tsc + node --test
+npm run package      # out/<id>-<version>.zip
 ```
 
 `@omadia/plugin-api` is a **peer dependency**, provided by the omadia host at
