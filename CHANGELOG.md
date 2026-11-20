@@ -18,7 +18,7 @@
   also declares its `writeCapabilities` to the kernel.
 - Removed `llm:` preferences and `permissions.memory`. `description` is
   `en`/`de`. The ZIP no longer carries `skills/`.
-- `compat.core` is `>=1.75.0 <2.0` (kind `tool`, `agent_templates`).
+- `compat.core` is `>=1.76.0 <2.0` (kind `tool`, `agent_templates`).
 - Tests: `test/capabilityPlugin.test.mjs`; `scripts/check-skills.mjs` is gone
   with the skills.
 - No model access and no network of its own: the plugin makes no `fetch` and

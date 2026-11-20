@@ -124,10 +124,21 @@ export async function activate(ctx: PluginContext): Promise<ConfluenceHandle> {
 
   // Every toolkit tool goes to the kernel's tool runtime. The write tools are
   // only in the toolkit when the integration has confluence_write_enabled.
-  const disposeTools = registerToolkitTools(ctx, tools, {
-    docs: CONFLUENCE_TOOL_DOCS,
-    options: CONFLUENCE_TOOL_OPTIONS,
-  });
+  let disposeTools: () => void;
+  try {
+    disposeTools = registerToolkitTools(ctx, tools, {
+      docs: CONFLUENCE_TOOL_DOCS,
+      options: CONFLUENCE_TOOL_OPTIONS,
+    });
+  } catch (err) {
+    // A failed activation gets no close(): take the mounts down here.
+    disposeRoute();
+    disposeTeamsShell();
+    disposeTeamsData();
+    disposeMostReadDescriptor();
+    disposeOldestDescriptor();
+    throw err;
+  }
 
   return {
     async close() {

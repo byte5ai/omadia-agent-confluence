@@ -103,7 +103,7 @@ test('data router renders the page for a verified Teams user', async () => {
 test('manifest declares the Teams public path and the core floor that covers teams-sso', () => {
   const manifest = readFileSync(new URL('../manifest.yaml', import.meta.url), 'utf8');
   assert.match(manifest, /public_paths:\s*\n\s*-\s*"\/p\/agent-confluence\/teams"/);
-  assert.match(manifest, /core:\s*">=1\.75\.0 <2\.0"/);
+  assert.match(manifest, /core:\s*">=1\.76\.0 <2\.0"/);
 });
 
 test('activate registers session pages, Teams shell, teams-sso data and shell descriptors', async () => {
